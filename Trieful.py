@@ -181,10 +181,7 @@ class Trie(object):
 		
 	Upcoming Features
 	=================
-	
-	- mark every node method
-		- store the given value at every node along the key path
-		
+			
 	- key functions and storage functions for suffix tries
 		http://en.wikipedia.org/wiki/Suffix_tree
 		
@@ -401,7 +398,7 @@ class Trie(object):
 		"""
 		pass
 		
-	def get(self, path):
+	def get(self, path, defaultValue = None):
 		"""
 		Retrieve the objects mapped to this path key.
 		"""
@@ -409,14 +406,17 @@ class Trie(object):
 		
 		for comp in self._pathToKey(path):
 			if comp not in baseNode:
-				return None
+				return defaultValue
 			baseNode = baseNode[comp]
 		
 		if '__' not in baseNode:
-			return None
+			return defaultValue
 		else:
-			ret = baseNode['__']
-			return self._storeFunction['get'](ret)
+			ret = self._storeFunction['get'](baseNode['__'])
+			if ret is not None:
+				return ret
+			else:
+				return defaultvalue
 	
 	def __getitem__(self, path):
 		return self.get(path)
