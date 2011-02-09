@@ -10,6 +10,124 @@ KEY_STRING = {
 	'keyToPath': lambda x: x
 }
 
+"""
+Default STORE FUNCTION
+
+add: Append value to a list
+remove: Remove first occurance of value from list
+get: Return the list, or if the list is of length 1, return the only item in the list
+"""
+def store_default_add(old, new):
+	if old is None:
+		return [new]
+	else:
+		old.append(new)
+		return old
+
+def store_default_remove(obj, val):
+	if val in obj:
+		obj.remove(val)
+		if len(obj) == 0:
+			return None
+		else:
+			return obj
+	else:
+		return obj
+	
+def store_default_get(obj):
+	if len(obj) == 1:
+		return obj[0]
+	else:
+		return obj
+
+STORE_DEFAULT = {
+	'add': store_default_add,
+	'remove': store_default_remove,
+	'get': store_default_get
+}
+
+"""
+Overwrite STORE FUNCTION
+
+Enforce one value per path. This is, in effect, a standard Trie mapping.
+
+add: Replace node value with new value
+remove: Remove node
+get: Retrieve node value
+"""
+def store_ow_add(old, new):
+	return new
+
+def store_ow_remove(obj, val):
+	return None
+
+def store_ow_get(obj):
+	return obj
+	
+STORE_OVERWRITE = {
+	'add': store_ow_add,
+	'remove': store_ow_remove,
+	'get': store_ow_get
+}
+
+"""
+Addition STORE FUNCTION
+
+This storage function is based on adding values, regardless of type.
+
+add: add (append) value to existing value
+remove: subtract value from existing value
+get: retrieve raw value
+"""
+def store_add_add(old, new):
+	if old is None:
+		return new
+	else:
+		return old + new
+
+def store_add_remove(old, new):
+	return old - new
+
+def store_add_get(old):
+	return old
+	
+STORE_ADD = {
+	'add': store_add_add,
+	'remove': store_add_remove,
+	'get': store_add_get
+}
+
+"""
+Count STORE FUNCTION
+
+Count occurances via increment.
+
+add: increment by one
+remove: decrement by one (None at zero)
+get: retrieve value
+"""
+def store_count_add(old, new):
+	if old is None:
+		return 1
+	else:
+		return old + 1
+		
+def store_count_remove(old, new):
+	ret = old - 1
+	if ret == 0:
+		return None
+	else:
+		return ret
+
+def store_count_get(obj):
+	return obj
+	
+STORE_COUNT = {
+	'add': store_count_add,
+	'remove': store_count_remove,
+	'get': store_count_get
+}
+	
 class Trie(object):
 	"""
 	A fast, non-recursive Trie structure. Keys can be any iterable data type, and
@@ -63,6 +181,21 @@ class Trie(object):
 		
 	Upcoming Features
 	=================
+	
+	- mark every node method
+		- store the given value at every node along the key path
+		
+	- key functions and storage functions for suffix tries
+		http://en.wikipedia.org/wiki/Suffix_tree
+		
+	- example for interleaved levenstein trie
+	
+	- allow for packing/compressing trie by turning off add/remove when trie is filled
+		- set a read/write mode
+		- array packing or prefix compression
+	
+	- longest prefix matching
+		http://en.wikipedia.org/wiki/Longest_prefix_match
 		
 	- speed tests
 	
@@ -102,17 +235,13 @@ class Trie(object):
 	- comparisons
 	
 	- base iterator/generator (items generator)
-	
+	- follow dict base
+		- items
+		- iteritems
+		- iterkeys
+		- itervalues
 	- (keys|values|items)_startswith() method
-	
-	- storage function | mode
-		- by function (custom)
-			- SET
-			- APPEND
-			- COUNT
-			- OVERWRITE
-		- mode (count | append | overwrite)
-	
+		
 	- value sorting/searching
 	
 	- Trie walk
@@ -134,13 +263,21 @@ class Trie(object):
 	"""
 
 	
-	def __init__(self, keyFunction = None):
+	def __init__(self, keyFunction = None, defaultValue = None, storeFunction = None):
 		self._nodes = {}
+		
+		if storeFunction is None:
+			self._storeFunction = STORE_DEFAULT
+		else:
+			self._storeFunction = storeFunction
+			
 		if keyFunction is None:
 			self._keyFunction = KEY_STRING
 		else:
 			self._keyFunction = keyFunction
-
+		
+		self._defaultValue = defaultValue
+		
 	def _pathToKey(self, p):
 		"""
 		Generate a key path based on the optionally configured keyFunction.
@@ -153,10 +290,14 @@ class Trie(object):
 		"""
 		return self._keyFunction['keyToPath'](k)
 		
-	def add(self, path, obj):
+	def add(self, path, obj = None):
 		"""
 		Map the path key to the given object.
 		"""
+		addObj = obj
+		if addObj is None:
+			addObj = self._defaultValue
+			
 		baseNode = self._nodes
 		
 		for comp in self._pathToKey(path):
@@ -165,9 +306,10 @@ class Trie(object):
 			baseNode = baseNode[comp]
 				
 		if '__' not in baseNode:
-			baseNode['__'] = [obj]
+			baseNode['__'] = self._storeFunction['add'](None, addObj)
 		else:
-			baseNode['__'].append(obj)
+			oldValue = baseNode['__']
+			baseNode['__'] = self._storeFunction['add'](oldValue, addObj)
 	
 	def __setitem__(self, path, obj):
 		"""
@@ -204,11 +346,15 @@ class Trie(object):
 	def __delitem__(self, path):
 		self.removeAll(path)
 		
-	def remove(self, path, obj):
+	def remove(self, path, obj = None):
 		"""
 		Remove a specific item of the path, and leave any others in place.
 		"""
 		
+		remObj = obj
+		if remObj is None:
+			remObj = self._defaultValue
+			
 		baseNode = self._nodes
 		pathKey = self._pathToKey(path)
 		
@@ -223,10 +369,9 @@ class Trie(object):
 			return
 			
 		# remove any values
-		if obj in baseNode[leafPath]['__']:
-			baseNode[leafPath]['__'].remove(obj)
+		baseNode[leafPath]['__'] = self._storeFunction['remove'](baseNode[leafPath]['__'], remObj)
 		
-		if len(baseNode[leafPath]['__']) == 0:
+		if baseNode[leafPath]['__'] is None:
 			del baseNode[leafPath]['__']
 			
 		# if the node is now empty, delete it
@@ -254,10 +399,7 @@ class Trie(object):
 			return None
 		else:
 			ret = baseNode['__']
-			if len(ret) == 1:
-				return ret[0]
-			else:
-				return ret
+			return self._storeFunction['get'](ret)
 	
 	def __getitem__(self, path):
 		return self.get(path)
