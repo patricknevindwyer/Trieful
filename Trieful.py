@@ -290,11 +290,11 @@ class Trie(object):
 		"""
 		return self._keyFunction['keyToPath'](k)
 		
-	def add(self, path, obj = None):
+	def add(self, path, value = None, atAllSubPaths = False):
 		"""
 		Map the path key to the given object.
 		"""
-		addObj = obj
+		addObj = value
 		if addObj is None:
 			addObj = self._defaultValue
 			
@@ -304,12 +304,21 @@ class Trie(object):
 			if comp not in baseNode:
 				baseNode[comp] = {}
 			baseNode = baseNode[comp]
-				
-		if '__' not in baseNode:
-			baseNode['__'] = self._storeFunction['add'](None, addObj)
-		else:
-			oldValue = baseNode['__']
-			baseNode['__'] = self._storeFunction['add'](oldValue, addObj)
+			
+			# add to this subpath
+			if atAllSubPaths:
+				if '__' not in baseNode:
+					baseNode['__'] = self._storeFunction['add'](None, addObj)
+				else:
+					oldValue = baseNode['__']
+					baseNode['__'] = self._storeFunction['add'](oldValue, addObj)
+
+		if not atAllSubPaths:
+			if '__' not in baseNode:
+				baseNode['__'] = self._storeFunction['add'](None, addObj)
+			else:
+				oldValue = baseNode['__']
+				baseNode['__'] = self._storeFunction['add'](oldValue, addObj)
 	
 	def __setitem__(self, path, obj):
 		"""
@@ -346,12 +355,12 @@ class Trie(object):
 	def __delitem__(self, path):
 		self.removeAll(path)
 		
-	def remove(self, path, obj = None):
+	def remove(self, path, value = None, atAllSubPaths = False):
 		"""
 		Remove a specific item of the path, and leave any others in place.
 		"""
 		
-		remObj = obj
+		remObj = value
 		if remObj is None:
 			remObj = self._defaultValue
 			
@@ -362,6 +371,14 @@ class Trie(object):
 			if comp not in baseNode:
 				return
 			baseNode = baseNode[comp]
+			
+			if atAllSubPaths:
+				if '__' in baseNode:
+					baseNode['__'] = self._storeFunction['remove'](baseNode['__'], remObj)
+				
+					if baseNode['__'] is None:
+						del baseNode['__']
+			
 		
 		# see if the tail leaf exists
 		leafPath = pathKey[-1]

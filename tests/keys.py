@@ -7,8 +7,21 @@ def suite():
 	suite = unittest.TestSuite()
 	suite.addTests(unittest.TestLoader().loadTestsFromTestCase(StringKeyTests))
 	suite.addTests(unittest.TestLoader().loadTestsFromTestCase(DottedKeyTests))
+	suite.addTests(unittest.TestLoader().loadTestsFromTestCase(KeyAsValueTests))
 	return suite
 	
+class KeyAsValueTests(unittest.TestCase):
+
+	def setUp(self):
+		self.trie = Trie(keyFunction = KEY_DOTTED)
+		self.keys = ['com.example', 'com.baz', 'com.example.sub', 'org.example']
+		for key in self.keys:
+			self.trie.add(key, key)
+	
+	def test_values(self):
+		for k in self.keys:
+			self.assertTrue(self.trie.get(k) == k, "Trie::get")
+			
 class DottedKeyTests(unittest.TestCase):
 	
 	def setUp(self):
