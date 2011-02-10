@@ -424,7 +424,11 @@ class Trie(object):
 		"""
 		Remove an entire branch of the path, including child nodes and paths.
 		"""
-		pass
+		
+		prunePaths = list(self.paths(prefix = path))
+		
+		for prunePath in prunePaths:
+			self.removeAll(prunePath)
 		
 	def get(self, path, defaultValue = None):
 		"""

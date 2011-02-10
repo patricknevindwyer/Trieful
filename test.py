@@ -9,6 +9,7 @@ import tests.trie_items
 import tests.trie_add
 import tests.trie_iadd
 import tests.trie_path
+import tests.trie_prune
 
 from Trieful import Trie
 
@@ -23,4 +24,5 @@ if __name__ == "__main__":
 	suite.addTests(tests.trie_add.suite())
 	suite.addTests(tests.trie_iadd.suite())
 	suite.addTests(tests.trie_path.suite())
+	suite.addTests(tests.trie_prune.suite())
 	unittest.TextTestRunner(verbosity=2).run(suite)
