@@ -26,31 +26,38 @@ if __name__ == "__main__":
 	# Read all of the words from the shared dictionary, and add them to the Trie
 	dictfile = open('/usr/share/dict/words', 'r')
 	
-	# track time and 
+	# Track how long it takes to build out the Trie
 	st = time.time()
-	wordcount = 0
 	for word in dictfile:
-		wordcount += 1
 		t.add(word.strip(), atAllSubPaths = True)
 	ed = time.time()
 	dictfile.close()
 	
-	print "\tBuilt Trie of %i words in %s (%0.2f words / second)" % (wordcount, str(timedelta(seconds = ed - st)), (wordcount * 1.0) / (ed - st))
+	print "\tBuilt Trie of %i words in %s (%0.2f words / second)" % (len(t), str(timedelta(seconds = ed - st)), (len(t) * 1.0) / (ed - st))
 	
-	print "Prefix graph"
+	print "Prefix graph:\n"
+	
+	# the prefix graph is just a simple double loop to find each prefix combination
 	prefixes = "abcdefghijklmnopqrstuvwxyz"
+	
 	st = time.time()
 	
 	print "  %s" % (prefixes)
-	print ""
+	print " +" + "-" * 26 + "+"
+	
 	for rowPrefix in prefixes:
-		rowData = [rowPrefix, " "]
+		rowData = [rowPrefix, "|"]
 		for colPrefix in prefixes:
 			if t.get(rowPrefix + colPrefix, defaultValue = 0) > 0:
-				rowData.append("#")
+				rowData.append('+')
 			else:
 				rowData.append(" ")
+		rowData += ['|', rowPrefix]
 		print "".join(rowData)
+
+	print " +" + "-" * 26 + "+"
+	print "  %s" % (prefixes)
 	
 	ed = time.time()
+	
 	print "\nPrefix graph took %s" % (str(timedelta(seconds = ed - st)))

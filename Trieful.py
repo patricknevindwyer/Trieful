@@ -1,4 +1,6 @@
 #!/usr/bin/python
+import types
+import copy
 
 KEY_DOTTED = {
 	'pathToKey':lambda x: x.split('.'),
@@ -199,9 +201,7 @@ class Trie(object):
 	- fast prefix counting
 	
 	- fast loading
-	
-	- built in sub node counts
-	
+		
 	- paths from node:
 		
 		find all base paths:
@@ -226,6 +226,10 @@ class Trie(object):
 		
 	- -= method
 	
+	= AND (&) OR (|) XOR(^) operations
+		
+		set operations
+		
 	- __add__ method
 		Merge Trie with other Tries or data structures
 		
@@ -240,11 +244,7 @@ class Trie(object):
 		Find subset containing only prefix
 		
 		find prefix, deep copy, hand build prefix structure
-		
-	- __len__ method
-		
-		- track number of keys at top level
-		
+			
 	- comparisons
 	
 	- base iterator/generator (items generator)
@@ -451,6 +451,53 @@ class Trie(object):
 	
 	def __getitem__(self, path):
 		return self.get(path)
+	
+	def __add__(self, other):
+		"""
+		Add the contents of the right hand operand to a new trie. The current
+		Trie is deep copied into a new Trie, and the contents of the right
+		hand operand iterated to add to the new Trie.
+		
+		Supported right hand operands:
+		
+			- Trie
+			- Dictionary
+			
+		"""
+		
+		if type(other) == types.DictType:
+		
+			# duplicate the current Trie
+			nt = self._deepcopy()
+			
+			for (k, v) in other.items():
+				nt.add(k, v)
+			
+			return nt
+			
+		elif isinstance(other, Trie):
+		
+			if self._keyFunction != other._keyFunction:
+				raise TypeError("Trie keyFunctions don't match")
+			elif self._storeFunction != other._storeFunction:
+				raise TypeError("Trie storeFunctions don't match")
+				
+			# duplicate self
+			nt = self._deepcopy()
+			
+			# merge the other trie data
+			for (k, v) in other.items():
+				nt.add(k, v)
+			
+			return nt
+		else:
+			raise TypeError("Unsupported type added to Trie: %s" % (type(other)))
+	
+	def _deepcopy(self):
+		nt = Trie(storeFunction = self._storeFunction, keyFunction = self._keyFunction)
+		nt._nodes = copy.deepcopy(self._nodes)
+		nt._size = self._size
+		return nt
 		
 	def getSubPaths(self, path):
 		"""
@@ -544,7 +591,12 @@ class Trie(object):
 			'mypath' in trie
 		"""
 		return self.has(path)
+	
+	def items(self):
 		
+		for path in self.paths():
+			yield (path, self[path])
+			
 	def paths(self):
 		"""
 		Return all of the paths stored in the Trie.
