@@ -193,7 +193,23 @@ class Trie(object):
 	
 	- longest prefix matching
 		http://en.wikipedia.org/wiki/Longest_prefix_match
+	
+	- case insensitive / sensitive comparisons
+	
+	- fast prefix counting
+	
+	- fast loading
+	
+	- built in sub node counts
+	
+	- paths from node:
 		
+		find all base paths:
+			t.subPathsOf("")
+		
+		find all stemmed:
+			t.subPathsOf("dis")
+			
 	- speed tests
 	
 	- examples
@@ -261,7 +277,9 @@ class Trie(object):
 
 	
 	def __init__(self, keyFunction = None, defaultValue = None, storeFunction = None):
+
 		self._nodes = {}
+		self._size = 0
 		
 		if storeFunction is None:
 			self._storeFunction = STORE_DEFAULT
@@ -296,6 +314,7 @@ class Trie(object):
 			addObj = self._defaultValue
 			
 		baseNode = self._nodes
+		lastNodeAdded = False
 		
 		for comp in self._pathToKey(path):
 			if comp not in baseNode:
@@ -305,18 +324,25 @@ class Trie(object):
 			# add to this subpath
 			if atAllSubPaths:
 				if '__' not in baseNode:
+					lastNodeAdded = True
 					baseNode['__'] = self._storeFunction['add'](None, addObj)
 				else:
+					lastNodeAdded = False
 					oldValue = baseNode['__']
 					baseNode['__'] = self._storeFunction['add'](oldValue, addObj)
 
 		if not atAllSubPaths:
 			if '__' not in baseNode:
+				lastNodeAdded = True
 				baseNode['__'] = self._storeFunction['add'](None, addObj)
 			else:
+				lastNodeAdded = False
 				oldValue = baseNode['__']
 				baseNode['__'] = self._storeFunction['add'](oldValue, addObj)
-	
+		
+		if lastNodeAdded:
+			self._size += 1
+			
 	def __setitem__(self, path, obj):
 		"""
 		Set an item using the square bracket accessors
@@ -344,6 +370,7 @@ class Trie(object):
 			
 		# remove any values
 		del baseNode[leafPath]['__']
+		self._size -= 1
 		
 		# if the node is now empty, delete it
 		if len(baseNode[leafPath].keys()) == 0:
@@ -387,10 +414,14 @@ class Trie(object):
 		
 		if baseNode[leafPath]['__'] is None:
 			del baseNode[leafPath]['__']
+			self._size -= 1
 			
 		# if the node is now empty, delete it
 		if len(baseNode[leafPath].keys()) == 0:
 			del baseNode[leafPath]
+	
+	def __len__(self):
+		return self._size
 		
 	def prune(self, path):
 		"""
