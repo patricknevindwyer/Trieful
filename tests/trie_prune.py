@@ -20,6 +20,17 @@ class TriePruneTests(unittest.TestCase):
 		for key in self.keys:
 			self.assertTrue(self.trie.has(key), "Trie::has")
 	
+	def test_outoforder_paths(self):
+		
+		self.trie.add("com.zanzibar")
+		self.trie.add("com.foobar")
+		self.trie.prune('com')
+		
+		comPaths = list(self.trie.paths(prefix = 'com'))
+		self.assertTrue(len(comPaths) == 0, "Trie::paths(prefix)")
+		
+		self.assertTrue(len(self.trie) == 2, "Trie::__len__")
+		
 	def test_paths(self):
 		
 		self.trie.prune('com.example.sub')

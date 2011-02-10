@@ -429,6 +429,8 @@ class Trie(object):
 		
 		for prunePath in prunePaths:
 			self.removeAll(prunePath)
+		# make sure structure is pruned completely
+		
 		
 	def get(self, path, defaultValue = None):
 		"""
