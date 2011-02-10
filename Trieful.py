@@ -229,17 +229,7 @@ class Trie(object):
 	= AND (&) OR (|) XOR(^) operations
 		
 		set operations
-		
-	- __add__ method
-		Merge Trie with other Tries or data structures
-		
-		deep copy one, merge data from other using dict::update
-		keyFunction must agree
-		
-	- += method
-		
-		direct merge into primary
-		
+						
 	- __mod__ method
 		Find subset containing only prefix
 		
@@ -452,6 +442,39 @@ class Trie(object):
 	def __getitem__(self, path):
 		return self.get(path)
 	
+	def __iadd__(self, other):
+		"""
+		Handle in place addition of objects to the Trie. Suppoted right
+		hand operands:
+			
+			- Trie
+			- Dictionary
+		
+		In the case of adding Tries, the keyFunction and storeFunction must
+		agree, or a TypeError will be raised.
+		"""
+		
+		if type(other) == types.DictType:
+
+			for (k, v) in other.items():
+				self.add(k, v)
+				
+			return self
+			
+		elif isinstance(other, Trie):
+
+			if self._keyFunction != other._keyFunction:
+				raise TypeError("Trie keyFunctions don't match")
+			elif self._storeFunction != other._storeFunction:
+				raise TypeError("Trie storeFunctions don't match")
+			
+			for (k, v) in other.items():
+				self.add(k, v)
+			
+			return self
+		else:
+			raise TypeError("Unsupported type added to trie: %s" % (type(other)))
+		
 	def __add__(self, other):
 		"""
 		Add the contents of the right hand operand to a new trie. The current
@@ -463,6 +486,8 @@ class Trie(object):
 			- Trie
 			- Dictionary
 			
+		In the case of adding Tries, the keyFunction and storeFunction must
+		agree, or a TypeError will be raised.
 		"""
 		
 		if type(other) == types.DictType:
