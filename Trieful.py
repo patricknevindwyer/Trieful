@@ -231,6 +231,13 @@ class Trie(object):
 		set operations
 						
 	- __mod__ method
+	
+		trie:
+			find any paths _not_ in other trie
+		
+		other:
+			find any paths _not_ in prefix generated from _other_
+			
 		Find subset containing only prefix
 		
 		find prefix, deep copy, hand build prefix structure
@@ -518,6 +525,11 @@ class Trie(object):
 		else:
 			raise TypeError("Unsupported type added to Trie: %s" % (type(other)))
 	
+	def __mod__(self, other):
+		"""
+		"""
+		pass
+		
 	def _deepcopy(self):
 		nt = Trie(storeFunction = self._storeFunction, keyFunction = self._keyFunction)
 		nt._nodes = copy.deepcopy(self._nodes)
@@ -622,13 +634,16 @@ class Trie(object):
 		for path in self.paths():
 			yield (path, self[path])
 			
-	def paths(self):
+	def paths(self, prefix = None):
 		"""
 		Return all of the paths stored in the Trie.
 		"""
 		
 		stack = []
-		
+		pathPrefix = None
+		if prefix is not None:
+			pathPrefix = self._pathToKey(prefix)
+			
 		# prime the stack with the base prefixes
 		baseNode = self._nodes
 		startKeys = baseNode.keys()
@@ -655,7 +670,11 @@ class Trie(object):
 				
 			# if their is a leaf, yield this path
 			if '__' in pathTuple[1]:
-				yield self._keyToPath(pathTuple[0])
+				if pathPrefix is None:
+					yield self._keyToPath(pathTuple[0])
+				else:
+					if pathPrefix == pathTuple[0][:len(pathPrefix)]:
+						yield self._keyToPath(pathTuple[0])
 	
 	def __repr__(self):
 		
